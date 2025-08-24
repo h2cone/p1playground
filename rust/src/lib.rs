@@ -1,5 +1,8 @@
 use godot::prelude::*;
 
+mod level;
+mod world;
+
 struct MyExtension;
 
 #[gdextension]

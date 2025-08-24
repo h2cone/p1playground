@@ -11,5 +11,5 @@ config_version=5
 [application]
 
 config/name="p1playground-godot"
+run/main_scene="uid://cnm7puiy4hmg2"
 config/features=PackedStringArray("4.4", "Forward Plus")
-config/icon="res://icon.svg"
