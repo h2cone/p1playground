@@ -418,4 +418,5 @@ sources/0 = SubResource("TileSetAtlasSource_vonw3")
 [node name="Level" type="Level"]
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
+tile_map_data = PackedByteArray(0, 0, 19, 0, 11, 0, 0, 0, 2, 0, 1, 0, 0, 0)
 tile_set = SubResource("TileSet_5xgho")
