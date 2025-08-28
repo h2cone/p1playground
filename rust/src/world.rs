@@ -1,18 +1,18 @@
 use godot::prelude::*;
 
 #[derive(GodotClass)]
-#[class(base=Node)]
+#[class(base=Node2D)]
 pub struct World {
-    base: Base<Node>,
+    base: Base<Node2D>,
 }
 
 #[godot_api]
-impl INode for World {
-    fn init(base: Base<Node>) -> Self {
+impl INode2D for World {
+    fn init(base: Base<Node2D>) -> Self {
         Self { base }
     }
 
     fn ready(&mut self) {
-        godot_print!("World ready!")
+        godot_print!("World ready")
     }
 }

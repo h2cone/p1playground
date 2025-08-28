@@ -1,6 +1,6 @@
 use godot::prelude::*;
 
-mod level;
+mod game;
 mod world;
 
 struct MyExtension;
