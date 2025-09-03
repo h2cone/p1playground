@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://hdtcnyq7481q"]
+
+[ext_resource type="Texture2D" uid="uid://bcf50i1i2e63s" path="res://industrial.v2.0x72.itch.io.png" id="1_4flbx"]
+
+[node name="Player" type="Player"]
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_4flbx")
+region_enabled = true
+region_rect = Rect2(0, 256, 128, 32)
