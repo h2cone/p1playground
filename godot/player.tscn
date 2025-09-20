@@ -2,6 +2,21 @@
 
 [ext_resource type="Texture2D" uid="uid://bcf50i1i2e63s" path="res://industrial.v2.0x72.itch.io.png" id="1_4flbx"]
 
+[sub_resource type="Animation" id="Animation_onrkg"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+
 [sub_resource type="Animation" id="Animation_4flbx"]
 resource_name = "idle"
 length = 1.2
@@ -18,21 +33,6 @@ tracks/0/keys = {
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 1,
 "values": [0, 1, 2, 3]
-}
-
-[sub_resource type="Animation" id="Animation_onrkg"]
-length = 0.001
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Sprite2D:frame")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [0]
 }
 
 [sub_resource type="Animation" id="Animation_i3pqv"]
@@ -64,6 +64,7 @@ _data = {
 size = Vector2(17, 16)
 
 [node name="Player" type="Player"]
+collision_layer = 2
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("1_4flbx")

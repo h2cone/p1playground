@@ -1,14 +1,17 @@
 param(
     [Parameter(Mandatory = $true, Position = 0)]
     [ValidateSet("start", "stop", "restart")]
-    [string]$Command
+    [string]$Command,
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$GodotArgs
 )
 
 $GodotExecutable = "godot"
 $ProjectPath = "./godot"
-$Arguments = @(
-    "--path", $ProjectPath
-)
+$Arguments = @("--path", $ProjectPath)
+if ($GodotArgs) {
+    $Arguments += $GodotArgs
+}
 
 $ProcessInfoFile = "godot_process.txt"
 

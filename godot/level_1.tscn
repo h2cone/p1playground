@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=4 uid="uid://dkes54legptu6"]
+[gd_scene load_steps=4 format=4 uid="uid://dkes54legptu6"]
 
 [ext_resource type="TileSet" uid="uid://b80g4bs0u8kh5" path="res://level.tres" id="1_3hls8"]
 [ext_resource type="PackedScene" uid="uid://hdtcnyq7481q" path="res://player.tscn" id="2_hbghi"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hbghi"]
 
 [node name="Level1" type="Level"]
 
@@ -11,3 +13,11 @@ tile_set = ExtResource("1_3hls8")
 
 [node name="Player" parent="." instance=ExtResource("2_hbghi")]
 position = Vector2(9, 8)
+
+[node name="LevelPortal" type="LevelPortal" parent="."]
+position = Vector2(198, 182)
+collision_layer = 4
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LevelPortal"]
+shape = SubResource("RectangleShape2D_hbghi")

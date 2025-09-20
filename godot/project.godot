@@ -27,6 +27,7 @@ window/stretch/aspect="expand"
 
 2d_physics/layer_1="tile"
 2d_physics/layer_2="player"
+2d_physics/layer_3="level_portal"
 
 [rendering]
 
