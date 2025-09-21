@@ -61,7 +61,7 @@ _data = {
 }
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_4flbx"]
-size = Vector2(17, 16)
+size = Vector2(16, 16)
 
 [node name="Player" type="Player"]
 collision_layer = 2
@@ -79,5 +79,4 @@ libraries = {
 }
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(-0.5, 0)
 shape = SubResource("RectangleShape2D_4flbx")
