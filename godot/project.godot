@@ -12,14 +12,14 @@ config_version=5
 
 config/name="p1playground-godot"
 run/main_scene="uid://c5rbvn0ul2ul6"
-config/features=PackedStringArray("4.4", "Forward Plus")
+config/features=PackedStringArray("4.5", "Forward Plus")
 
 [display]
 
-window/size/viewport_width=384
-window/size/viewport_height=216
-window/size/window_width_override=1152
-window/size/window_height_override=648
+window/size/viewport_width=480
+window/size/viewport_height=270
+window/size/window_width_override=1920
+window/size/window_height_override=1080
 window/stretch/mode="viewport"
 window/stretch/aspect="expand"
 
@@ -27,7 +27,7 @@ window/stretch/aspect="expand"
 
 2d_physics/layer_1="tile"
 2d_physics/layer_2="player"
-2d_physics/layer_3="level_portal"
+2d_physics/layer_3="portal"
 
 [rendering]
 

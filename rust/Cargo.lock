@@ -18,14 +18,14 @@ source = "git+https://github.com/godot-rust/godot4-prebuilt?branch=releases#0943
 
 [[package]]
 name = "glam"
-version = "0.30.5"
+version = "0.30.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2d1aab06663bdce00d6ca5e5ed586ec8d18033a771906c993a1e3755b368d85"
+checksum = "34e4649b62c21fb8c737abe6449192ce96ecd16b5c0d606759fe43831b31bd95"
 
 [[package]]
 name = "godot"
 version = "0.3.5"
-source = "git+https://github.com/godot-rust/gdext#07c34e7975cdae29d253ea8e2ade5a077a894f11"
+source = "git+https://github.com/godot-rust/gdext#c4051c0205cf4c1a1a452634c9fbe123fab61be0"
 dependencies = [
  "godot-core",
  "godot-macros",
@@ -34,7 +34,7 @@ dependencies = [
 [[package]]
 name = "godot-bindings"
 version = "0.3.5"
-source = "git+https://github.com/godot-rust/gdext#07c34e7975cdae29d253ea8e2ade5a077a894f11"
+source = "git+https://github.com/godot-rust/gdext#c4051c0205cf4c1a1a452634c9fbe123fab61be0"
 dependencies = [
  "gdextension-api",
 ]
@@ -42,12 +42,12 @@ dependencies = [
 [[package]]
 name = "godot-cell"
 version = "0.3.5"
-source = "git+https://github.com/godot-rust/gdext#07c34e7975cdae29d253ea8e2ade5a077a894f11"
+source = "git+https://github.com/godot-rust/gdext#c4051c0205cf4c1a1a452634c9fbe123fab61be0"
 
 [[package]]
 name = "godot-codegen"
 version = "0.3.5"
-source = "git+https://github.com/godot-rust/gdext#07c34e7975cdae29d253ea8e2ade5a077a894f11"
+source = "git+https://github.com/godot-rust/gdext#c4051c0205cf4c1a1a452634c9fbe123fab61be0"
 dependencies = [
  "godot-bindings",
  "heck",
@@ -60,7 +60,7 @@ dependencies = [
 [[package]]
 name = "godot-core"
 version = "0.3.5"
-source = "git+https://github.com/godot-rust/gdext#07c34e7975cdae29d253ea8e2ade5a077a894f11"
+source = "git+https://github.com/godot-rust/gdext#c4051c0205cf4c1a1a452634c9fbe123fab61be0"
 dependencies = [
  "glam",
  "godot-bindings",
@@ -72,7 +72,7 @@ dependencies = [
 [[package]]
 name = "godot-ffi"
 version = "0.3.5"
-source = "git+https://github.com/godot-rust/gdext#07c34e7975cdae29d253ea8e2ade5a077a894f11"
+source = "git+https://github.com/godot-rust/gdext#c4051c0205cf4c1a1a452634c9fbe123fab61be0"
 dependencies = [
  "godot-bindings",
  "godot-codegen",
@@ -83,7 +83,7 @@ dependencies = [
 [[package]]
 name = "godot-macros"
 version = "0.3.5"
-source = "git+https://github.com/godot-rust/gdext#07c34e7975cdae29d253ea8e2ade5a077a894f11"
+source = "git+https://github.com/godot-rust/gdext#c4051c0205cf4c1a1a452634c9fbe123fab61be0"
 dependencies = [
  "godot-bindings",
  "proc-macro2",
@@ -99,9 +99,9 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "libc"
-version = "0.2.175"
+version = "0.2.176"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a82ae493e598baaea5209805c49bbf2ea7de956d50d7da0da1164f9c6d28543"
+checksum = "58f929b4d672ea937a23a1ab494143d968337a5f47e56d0815df1e0890ddf174"
 
 [[package]]
 name = "memchr"

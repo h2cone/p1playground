@@ -1,59 +1,51 @@
 use godot::{
-    classes::{Node, Node2D},
-    obj::InstanceId,
+    classes::{Node, Node2D, PackedScene},
     prelude::*,
 };
 
-use crate::level_portal::LevelPortal;
-
 const LEVELS_LEN: usize = 3;
-const PORTAL_COOLDOWN_FRAMES: i32 = 6;
 const PLAYER_SCENE_PATH: &str = "res://player.tscn";
 const INITIAL_PLAYER_POS: (f32, f32) = (8.0, 8.0);
+const LEVEL_WIDTH: f32 = 480.0;
+const PLAYER_COLLISION_WIDTH: f32 = 16.0;
+const PLAYER_CROSS_THRESHOLD: f32 = 0.50;
 
-struct PortalCooldown {
-    portal_id: InstanceId,
-    frames_left: i32,
+#[derive(Copy, Clone)]
+struct LevelNeighbors {
+    left: Option<usize>,
+    right: Option<usize>,
 }
 
-impl PortalCooldown {
-    fn new(portal_id: InstanceId, frames_left: i32) -> Self {
-        Self {
-            portal_id,
-            frames_left,
-        }
-    }
+const LEVEL_NEIGHBORS: [LevelNeighbors; LEVELS_LEN] = [
+    LevelNeighbors {
+        left: None,
+        right: None,
+    },
+    LevelNeighbors {
+        left: None,
+        right: Some(2),
+    },
+    LevelNeighbors {
+        left: Some(1),
+        right: None,
+    },
+];
 
-    fn tick(&mut self) -> bool {
-        if self.frames_left > 0 {
-            self.frames_left -= 1;
-        }
-        self.frames_left <= 0
+impl LevelNeighbors {
+    fn for_level(index: usize) -> Self {
+        LEVEL_NEIGHBORS[index]
     }
-
-    fn matches(&self, portal_id: InstanceId) -> bool {
-        self.portal_id == portal_id
-    }
-}
-
-struct PendingTransfer {
-    portal_id: InstanceId,
-    target_level: i64,
-    spawn_point: NodePath,
-    offset: Vector2,
-    player: Gd<Node2D>,
 }
 
 #[derive(GodotClass)]
 #[class(base=Node2D)]
 pub struct World {
     base: Base<Node2D>,
-    levels: [Option<Gd<PackedScene>>; LEVELS_LEN],
+    level_scenes: [Option<Gd<PackedScene>>; LEVELS_LEN],
+    preloaded_levels: [Option<Gd<Node2D>>; LEVELS_LEN],
     current_level: Option<Gd<Node2D>>,
-    level_no: usize,
-    arrival_cooldown: Option<PortalCooldown>,
+    current_level_index: usize,
     player: Option<Gd<Node2D>>,
-    pending_transfer: Option<PendingTransfer>,
 }
 
 #[godot_api]
@@ -61,19 +53,19 @@ impl INode2D for World {
     fn init(base: Base<Node2D>) -> Self {
         Self {
             base,
-            levels: std::array::from_fn(|_| None),
+            level_scenes: std::array::from_fn(|_| None),
+            preloaded_levels: std::array::from_fn(|_| None),
             current_level: None,
-            level_no: 0,
-            arrival_cooldown: None,
+            current_level_index: 0,
             player: None,
-            pending_transfer: None,
         }
     }
 
     fn ready(&mut self) {
         for i in 1..LEVELS_LEN {
             let path = format!("res://level_{}.tscn", i);
-            self.levels[i] = Some(try_load::<PackedScene>(&path).expect("failed to load scene"));
+            self.level_scenes[i] =
+                Some(try_load::<PackedScene>(&path).expect("failed to load scene"));
         }
 
         let player_scene =
@@ -104,93 +96,32 @@ impl INode2D for World {
     }
 
     fn physics_process(&mut self, _delta: f64) {
-        if let Some(cooldown) = self.arrival_cooldown.as_mut() {
-            if cooldown.tick() {
-                self.arrival_cooldown = None;
-            }
-        }
+        let Some(player) = self.player.clone() else {
+            return;
+        };
 
-        if let Some(pending) = self.pending_transfer.take() {
-            self.execute_pending_transfer(pending);
-        }
+        self.check_horizontal_transitions(player);
     }
+}
+
+#[derive(Copy, Clone, Debug)]
+enum HorizontalDirection {
+    Left,
+    Right,
 }
 
 #[godot_api]
 impl World {
-    #[func]
-    fn queue_portal_transfer(
-        &mut self,
-        portal_id: InstanceId,
-        target_level: i64,
-        spawn_point: NodePath,
-        offset: Vector2,
-        player: Gd<Node2D>,
-    ) {
-        if self.should_ignore_portal(portal_id) {
-            return;
+    fn spawn_level(&mut self, level_no: usize) -> Option<Gd<Node2D>> {
+        if level_no == 0 || level_no >= LEVELS_LEN {
+            godot_warn!("Invalid level index {}", level_no);
+            return None;
         }
 
-        self.player = Some(player.clone());
-        self.pending_transfer = Some(PendingTransfer {
-            portal_id,
-            target_level,
-            spawn_point,
-            offset,
-            player,
-        });
-    }
-}
-
-impl World {
-    fn execute_pending_transfer(&mut self, pending: PendingTransfer) {
-        let PendingTransfer {
-            portal_id,
-            target_level,
-            spawn_point,
-            offset,
-            player,
-        } = pending;
-
-        self.request_portal_transfer(portal_id, target_level, spawn_point, offset, player);
-    }
-
-    fn request_portal_transfer(
-        &mut self,
-        portal_id: InstanceId,
-        target_level: i64,
-        spawn_point: NodePath,
-        offset: Vector2,
-        mut player: Gd<Node2D>,
-    ) {
-        if self.should_ignore_portal(portal_id) {
-            return;
-        }
-
-        if target_level <= 0 {
-            godot_warn!(
-                "Ignoring portal transfer with non-positive target level {}",
-                target_level
-            );
-            return;
-        }
-
-        let target_level = target_level as usize;
-        if target_level >= LEVELS_LEN {
-            godot_error!("Portal target level {} is out of range", target_level);
-            return;
-        }
-
-        if self.level_no == target_level {
-            return;
-        }
-
-        let player_node: Gd<Node> = player.clone().upcast();
-
-        if let Some(parent) = player.get_parent() {
-            let mut parent = parent;
-            parent.remove_child(&player_node);
-        }
+        let level = match self.preloaded_levels[level_no].take() {
+            Some(level) => level,
+            None => self.instantiate_level(level_no)?,
+        };
 
         if let Some(mut old_level) = self.current_level.take() {
             let old_level_node = old_level.clone().upcast::<Node>();
@@ -198,112 +129,141 @@ impl World {
             old_level.queue_free();
         }
 
-        let Some(new_level) = self.spawn_level(target_level) else {
-            godot_error!("Failed to spawn target level {}", target_level);
-            self.base_mut().add_child(&player_node);
-            return;
-        };
-
-        let (spawn_anchor, arrival_portal) = Self::resolve_spawn_targets(&new_level, &spawn_point);
-
-        let anchor_position = spawn_anchor
-            .as_ref()
-            .map(|anchor| anchor.get_global_position())
-            .unwrap_or_else(|| new_level.get_global_position());
-
-        {
-            let mut new_level_node = new_level.clone().upcast::<Node>();
-            new_level_node.add_child(&player_node);
-        }
-
-        player.set_global_position(anchor_position + offset);
-        self.player = Some(player.clone());
-
-        if let Some(portal) = arrival_portal {
-            self.arrival_cooldown = Some(PortalCooldown::new(
-                portal.instance_id(),
-                PORTAL_COOLDOWN_FRAMES,
-            ));
-        } else {
-            self.arrival_cooldown = None;
-        }
-    }
-
-    fn should_ignore_portal(&self, portal_id: InstanceId) -> bool {
-        self.arrival_cooldown
-            .as_ref()
-            .map(|cooldown| cooldown.matches(portal_id))
-            .unwrap_or(false)
-    }
-
-    fn spawn_level(&mut self, level_no: usize) -> Option<Gd<Node2D>> {
-        let scene = self.levels[level_no].as_ref()?;
-        let instance = scene.instantiate().expect("failed to instantiate");
-        let level = instance
-            .try_cast::<Node2D>()
-            .expect("level root must inherit Node2D");
-
         let level_node = level.clone().upcast::<Node>();
         self.base_mut().add_child(&level_node);
         self.current_level = Some(level.clone());
-        self.level_no = level_no;
+        self.current_level_index = level_no;
+        self.preload_adjacent_levels(level_no);
+
         Some(level)
     }
 
-    fn resolve_spawn_targets(
-        level: &Gd<Node2D>,
-        spawn_point: &NodePath,
-    ) -> (Option<Gd<Node2D>>, Option<Gd<LevelPortal>>) {
-        let mut level_node = level.clone().upcast::<Node>();
-
-        if !spawn_point.is_empty() {
-            let path_text = spawn_point.to_string();
-            let path_variant = spawn_point.to_variant();
-            let args = [path_variant.clone()];
-            let node_variant = level_node.call("get_node_or_null", &args);
-
-            if !node_variant.is_nil() {
-                if let Ok(node) = node_variant.try_to::<Gd<Node>>() {
-                    if let Ok(portal) = node.clone().try_cast::<LevelPortal>() {
-                        let portal_node: Gd<Node2D> = portal.clone().upcast::<Node2D>();
-                        return (Some(portal_node), Some(portal));
-                    }
-
-                    if let Ok(node2d) = node.try_cast::<Node2D>() {
-                        return (Some(node2d), None);
-                    }
-                }
-            } else {
-                godot_warn!(
-                    "Spawn point {} not found in level {}",
-                    path_text,
-                    level.get_name()
-                );
-            }
-        }
-
-        if let Some(portal) = Self::find_portal_recursive(&level_node) {
-            let portal_node: Gd<Node2D> = portal.clone().upcast::<Node2D>();
-            return (Some(portal_node), Some(portal));
-        }
-
-        (Some(level.clone()), None)
+    fn instantiate_level(&self, level_no: usize) -> Option<Gd<Node2D>> {
+        let scene = self.level_scenes[level_no].as_ref()?;
+        let instance = scene.instantiate().expect("failed to instantiate");
+        Some(
+            instance
+                .try_cast::<Node2D>()
+                .expect("level root must inherit Node2D"),
+        )
     }
 
-    fn find_portal_recursive(node: &Gd<Node>) -> Option<Gd<LevelPortal>> {
-        if let Ok(portal) = node.clone().try_cast::<LevelPortal>() {
-            return Some(portal);
+    fn preload_adjacent_levels(&mut self, center_level: usize) {
+        self.discard_far_preloads(center_level);
+
+        let neighbors = LevelNeighbors::for_level(center_level);
+        for neighbor in [neighbors.left, neighbors.right] {
+            let Some(index) = neighbor else {
+                continue;
+            };
+
+            if self.preloaded_levels[index].is_some() {
+                continue;
+            }
+
+            if let Some(level) = self.instantiate_level(index) {
+                godot_print!("Preloaded level {}", index);
+                self.preloaded_levels[index] = Some(level);
+            }
+        }
+    }
+
+    fn discard_far_preloads(&mut self, center_level: usize) {
+        let mut keep = [false; LEVELS_LEN];
+
+        if center_level < LEVELS_LEN {
+            keep[center_level] = true;
         }
 
-        let child_count = node.get_child_count();
-        for idx in 0..child_count {
-            if let Some(child) = node.get_child(idx) {
-                if let Some(portal) = Self::find_portal_recursive(&child) {
-                    return Some(portal);
-                }
+        let neighbors = LevelNeighbors::for_level(center_level);
+        for neighbor in [neighbors.left, neighbors.right] {
+            if let Some(index) = neighbor {
+                keep[index] = true;
             }
         }
 
-        None
+        for (idx, slot) in self.preloaded_levels.iter_mut().enumerate() {
+            if idx == 0 {
+                continue;
+            }
+
+            if !keep[idx] {
+                if let Some(mut level) = slot.take() {
+                    godot_print!("Dropping stale preload {}", idx);
+                    level.queue_free();
+                }
+            }
+        }
+    }
+
+    fn check_horizontal_transitions(&mut self, player: Gd<Node2D>) {
+        let neighbors = LevelNeighbors::for_level(self.current_level_index);
+        let position = player.get_global_position();
+        let half_width = PLAYER_COLLISION_WIDTH * 0.5;
+
+        if let Some(target_level) = neighbors.right {
+            let player_right = position.x + half_width;
+            let overflow = player_right - LEVEL_WIDTH;
+            if self.should_trigger_transition(overflow) {
+                self.transfer_player(player, target_level, HorizontalDirection::Right);
+                return;
+            }
+        }
+
+        if let Some(target_level) = neighbors.left {
+            let player_left = position.x - half_width;
+            let overflow = 0.0 - player_left;
+            if self.should_trigger_transition(overflow) {
+                self.transfer_player(player, target_level, HorizontalDirection::Left);
+            }
+        }
+    }
+
+    fn should_trigger_transition(&self, overflow: f32) -> bool {
+        if overflow <= 0.0 {
+            return false;
+        }
+
+        let ratio = overflow / PLAYER_COLLISION_WIDTH;
+        ratio >= PLAYER_CROSS_THRESHOLD
+    }
+
+    fn transfer_player(
+        &mut self,
+        player: Gd<Node2D>,
+        target_level: usize,
+        direction: HorizontalDirection,
+    ) {
+        let mut player = player;
+        let current_position = player.get_global_position();
+        let mut new_position = current_position;
+
+        match direction {
+            HorizontalDirection::Right => {
+                new_position.x -= LEVEL_WIDTH;
+            }
+            HorizontalDirection::Left => {
+                new_position.x += LEVEL_WIDTH;
+            }
+        }
+
+        let player_node: Gd<Node> = player.clone().upcast();
+        if let Some(parent) = player.get_parent() {
+            let mut parent = parent;
+            parent.remove_child(&player_node);
+        }
+
+        let Some(new_level) = self.spawn_level(target_level) else {
+            self.base_mut().add_child(&player_node);
+            self.player = Some(player);
+            return;
+        };
+
+        let mut level_node = new_level.clone().upcast::<Node>();
+        level_node.add_child(&player_node);
+        player.set_global_position(new_position);
+        self.player = Some(player);
+
+        godot_print!("Transitioned to level {} via {:?}", target_level, direction);
     }
 }
