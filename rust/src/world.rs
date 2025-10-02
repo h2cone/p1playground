@@ -1,5 +1,5 @@
 use godot::{
-    classes::{Node, Node2D, PackedScene},
+    classes::{Node2D, PackedScene},
     prelude::*,
 };
 
