@@ -14,6 +14,7 @@ enum State {
 const WALK_SPEED: f32 = 120.;
 const ACCEL_SPEED: f32 = WALK_SPEED * 6.0;
 const MIN_WALK_SPEED: f32 = 0.1;
+const JUMP_VELOCITY: f32 = -240.;
 
 #[derive(GodotClass)]
 #[class(base=CharacterBody2D)]
@@ -53,9 +54,14 @@ impl ICharacterBody2D for Player {
                     self.state = State::Floor;
                     return;
                 }
+                self.try_walk(&mut velocity, delta);
+                self.try_jump(&mut velocity);
             }
             State::Floor => {
                 self.try_walk(&mut velocity, delta);
+                if self.try_jump(&mut velocity) {
+                    self.state = State::Air;
+                }
             }
         }
 
@@ -79,7 +85,7 @@ impl ICharacterBody2D for Player {
 impl Player {
     fn try_walk(&mut self, velocity: &mut Vector2, delta: f64) {
         let input = Input::singleton();
-        let direction = input.get_axis("ui_left", "ui_right");
+        let direction = input.get_axis("walk_left", "walk_right");
         velocity.x = global::move_toward(
             velocity.x as f64,
             (direction * WALK_SPEED) as f64,
@@ -87,15 +93,31 @@ impl Player {
         ) as f32;
     }
 
+    fn try_jump(&mut self, velocity: &mut Vector2) -> bool {
+        let input = Input::singleton();
+        let can_jump = input.is_action_just_pressed("jump") && self.base().is_on_floor();
+        if can_jump {
+            velocity.y = JUMP_VELOCITY;
+        }
+        can_jump
+    }
+
     fn get_new_animation(&mut self) -> GString {
-        let animation = if let State::Floor = self.state {
-            if self.base().get_velocity().abs().x > MIN_WALK_SPEED {
-                "walk"
-            } else {
-                "idle"
+        let animation = match self.state {
+            State::Floor => {
+                if self.base().get_velocity().abs().x > MIN_WALK_SPEED {
+                    "walk"
+                } else {
+                    "idle"
+                }
             }
-        } else {
-            ""
+            State::Air => {
+                if self.base().get_velocity().y > 0. {
+                    "fall"
+                } else {
+                    "jump"
+                }
+            }
         };
         GString::from(animation)
     }
