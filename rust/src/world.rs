@@ -4,7 +4,7 @@ use godot::{
 };
 use std::collections::HashMap;
 
-use crate::room_graph::RoomGraph;
+use crate::{player::Player, room_graph::RoomGraph};
 
 const PLAYER_SCENE_PATH: &str = "res://player.tscn";
 const INITIAL_PLAYER_POS: (f32, f32) = (8.0, 8.0);
@@ -22,7 +22,7 @@ pub struct World {
     preloaded_rooms: HashMap<String, Gd<Node2D>>,
     current_room: Option<Gd<Node2D>>,
     current_room_name: String,
-    player: Option<Gd<Node2D>>,
+    player: Option<Gd<Player>>,
 }
 
 #[godot_api]
@@ -61,11 +61,11 @@ impl INode2D for World {
             .instantiate()
             .expect("failed to instantiate player scene");
         let mut player = player_instance
-            .try_cast::<Node2D>()
-            .expect("player root must inherit Node2D");
+            .try_cast::<Player>()
+            .expect("player root must be Player");
 
-        initial_room.add_child(&player);
         player.set_global_position(Vector2::new(INITIAL_PLAYER_POS.0, INITIAL_PLAYER_POS.1));
+        initial_room.add_child(&player);
 
         self.player = Some(player);
 
@@ -170,15 +170,19 @@ impl World {
         });
     }
 
-    fn check_horizontal_transitions(&mut self, player: Gd<Node2D>) {
+    fn check_horizontal_transitions(&mut self, player: Gd<Player>) {
         let neighbors = self.room_graph.get_neighbors(&self.current_room_name);
-        let position = player.get_global_position();
+        let (position, velocity_x) = {
+            let player_ref = player.bind();
+            let base = player_ref.base();
+            (base.get_global_position(), base.get_velocity().x)
+        };
         let half_width = PLAYER_WIDTH * 0.5;
 
         if let Some(target_room) = neighbors.right {
             let player_right = position.x + half_width;
             let overflow = player_right - ROOM_WIDTH;
-            if self.should_trigger_transition(overflow) {
+            if velocity_x > 0.0 && self.should_trigger_transition(overflow) {
                 self.transfer_player(player, target_room, HorizontalDirection::Right);
                 return;
             }
@@ -187,7 +191,7 @@ impl World {
         if let Some(target_room) = neighbors.left {
             let player_left = position.x - half_width;
             let overflow = 0.0 - player_left;
-            if self.should_trigger_transition(overflow) {
+            if velocity_x < 0.0 && self.should_trigger_transition(overflow) {
                 self.transfer_player(player, target_room, HorizontalDirection::Left);
             }
         }
@@ -204,12 +208,15 @@ impl World {
 
     fn transfer_player(
         &mut self,
-        player: Gd<Node2D>,
+        player: Gd<Player>,
         target_room: &str,
         direction: HorizontalDirection,
     ) {
         let mut player = player;
-        let mut position = player.get_global_position();
+        let mut position = {
+            let player_ref = player.bind();
+            player_ref.base().get_global_position()
+        };
 
         match direction {
             HorizontalDirection::Right => {
@@ -220,7 +227,7 @@ impl World {
             }
         }
 
-        let player_node: Gd<Node2D> = player.clone();
+        let player_node: Gd<Player> = player.clone();
         if let Some(mut parent) = player.get_parent() {
             parent.remove_child(&player_node);
         }

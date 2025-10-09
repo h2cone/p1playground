@@ -14,7 +14,7 @@ enum State {
 const WALK_SPEED: f32 = 120.;
 const ACCEL_SPEED: f32 = WALK_SPEED * 6.0;
 const MIN_WALK_SPEED: f32 = 0.1;
-const JUMP_VELOCITY: f32 = -240.;
+const JUMP_VELOCITY: f32 = -300.;
 
 #[derive(GodotClass)]
 #[class(base=CharacterBody2D)]

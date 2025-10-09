@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=4 uid="uid://dkes54legptu6"]
 
-[ext_resource type="TileSet" uid="uid://b80g4bs0u8kh5" path="res://room.tres" id="1_8uo23"]
+[ext_resource type="TileSet" uid="uid://b80g4bs0u8kh5" path="res://industrial.tres" id="1_8uo23"]
 
 [node name="Room" type="Room"]
 

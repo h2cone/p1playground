@@ -1,9 +1,9 @@
 [gd_resource type="TileSet" load_steps=3 format=3 uid="uid://b80g4bs0u8kh5"]
 
-[ext_resource type="Texture2D" uid="uid://bcf50i1i2e63s" path="res://industrial.v2.0x72.itch.io.png" id="1_3fri8"]
+[ext_resource type="Texture2D" uid="uid://bcf50i1i2e63s" path="res://industrial.v2.0x72.itch.io.png" id="1_q7xru"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_t218m"]
-texture = ExtResource("1_3fri8")
+texture = ExtResource("1_q7xru")
 0:0/0 = 0
 1:0/0 = 0
 2:0/0 = 0
@@ -50,7 +50,10 @@ texture = ExtResource("1_3fri8")
 9:1/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 9:1/1 = 1
 9:1/1/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
+10:1/next_alternative_id = 2
 10:1/0 = 0
+10:1/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
+10:1/1 = 1
 11:1/0 = 0
 12:1/0 = 0
 13:1/0 = 0
