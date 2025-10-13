@@ -31,7 +31,7 @@ impl RoomGraph {
             RoomNeighbors {
                 left: Some("room_0_0"),
                 right: Some("room_2_0"),
-                up: None,
+                up: Some("room_1_1"),
                 down: None,
             },
         );
@@ -43,6 +43,16 @@ impl RoomGraph {
                 right: None,
                 up: None,
                 down: None,
+            },
+        );
+
+        graph.insert(
+            "room_1_1",
+            RoomNeighbors {
+                left: None,
+                right: None,
+                up: None,
+                down: Some("room_1_0"),
             },
         );
 

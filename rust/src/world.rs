@@ -10,7 +10,9 @@ const PLAYER_SCENE_PATH: &str = "res://player.tscn";
 const INITIAL_PLAYER_POS: (f32, f32) = (8.0, 8.0);
 const INITIAL_ROOM: &str = "room_1_0";
 const ROOM_WIDTH: f32 = 480.0;
+const ROOM_HEIGHT: f32 = 270.0;
 const PLAYER_WIDTH: f32 = 16.0;
+const PLAYER_HEIGHT: f32 = 16.0;
 const PLAYER_CROSS_THRESHOLD: f32 = 0.50;
 
 #[derive(GodotClass)]
@@ -77,14 +79,22 @@ impl INode2D for World {
             return;
         };
 
-        self.check_horizontal_transitions(player);
+        if self.check_vertical_transitions(player.clone()) {
+            return;
+        }
+
+        if self.check_horizontal_transitions(player) {
+            return;
+        }
     }
 }
 
 #[derive(Copy, Clone, Debug)]
-enum HorizontalDirection {
+enum TransitionDirection {
     Left,
     Right,
+    Up,
+    Down,
 }
 
 #[godot_api]
@@ -170,7 +180,7 @@ impl World {
         });
     }
 
-    fn check_horizontal_transitions(&mut self, player: Gd<Player>) {
+    fn check_horizontal_transitions(&mut self, player: Gd<Player>) -> bool {
         let neighbors = self.room_graph.get_neighbors(&self.current_room_name);
         let (position, velocity_x) = {
             let player_ref = player.bind();
@@ -182,27 +192,60 @@ impl World {
         if let Some(target_room) = neighbors.right {
             let player_right = position.x + half_width;
             let overflow = player_right - ROOM_WIDTH;
-            if velocity_x > 0.0 && self.should_trigger_transition(overflow) {
-                self.transfer_player(player, target_room, HorizontalDirection::Right);
-                return;
+            if velocity_x > 0.0 && self.should_trigger_transition(overflow, PLAYER_WIDTH) {
+                self.transfer_player(player.clone(), target_room, TransitionDirection::Right);
+                return true;
             }
         }
 
         if let Some(target_room) = neighbors.left {
             let player_left = position.x - half_width;
             let overflow = 0.0 - player_left;
-            if velocity_x < 0.0 && self.should_trigger_transition(overflow) {
-                self.transfer_player(player, target_room, HorizontalDirection::Left);
+            if velocity_x < 0.0 && self.should_trigger_transition(overflow, PLAYER_WIDTH) {
+                self.transfer_player(player, target_room, TransitionDirection::Left);
+                return true;
             }
         }
+
+        false
     }
 
-    fn should_trigger_transition(&self, overflow: f32) -> bool {
+    fn check_vertical_transitions(&mut self, player: Gd<Player>) -> bool {
+        let neighbors = self.room_graph.get_neighbors(&self.current_room_name);
+        let (position, velocity_y) = {
+            let player_ref = player.bind();
+            let base = player_ref.base();
+            (base.get_global_position(), base.get_velocity().y)
+        };
+        let half_height = PLAYER_HEIGHT * 0.5;
+
+        if let Some(target_room) = neighbors.up {
+            let player_top = position.y - half_height;
+            let overflow = 0.0 - player_top;
+            if velocity_y < 0.0 && self.should_trigger_transition(overflow, PLAYER_HEIGHT) {
+                self.transfer_player(player.clone(), target_room, TransitionDirection::Up);
+                return true;
+            }
+        }
+
+        if let Some(target_room) = neighbors.down {
+            let player_bottom = position.y + half_height;
+            let overflow = player_bottom - ROOM_HEIGHT;
+            if velocity_y > 0.0 && self.should_trigger_transition(overflow, PLAYER_HEIGHT) {
+                self.transfer_player(player, target_room, TransitionDirection::Down);
+                return true;
+            }
+        }
+
+        false
+    }
+
+    fn should_trigger_transition(&self, overflow: f32, player_extent: f32) -> bool {
         if overflow <= 0.0 {
             return false;
         }
 
-        let ratio = overflow / PLAYER_WIDTH;
+        let ratio = overflow / player_extent;
         ratio >= PLAYER_CROSS_THRESHOLD
     }
 
@@ -210,7 +253,7 @@ impl World {
         &mut self,
         player: Gd<Player>,
         target_room: &str,
-        direction: HorizontalDirection,
+        direction: TransitionDirection,
     ) {
         let mut player = player;
         let mut position = {
@@ -219,11 +262,17 @@ impl World {
         };
 
         match direction {
-            HorizontalDirection::Right => {
+            TransitionDirection::Right => {
                 position.x -= ROOM_WIDTH;
             }
-            HorizontalDirection::Left => {
+            TransitionDirection::Left => {
                 position.x += ROOM_WIDTH;
+            }
+            TransitionDirection::Up => {
+                position.y += ROOM_HEIGHT;
+            }
+            TransitionDirection::Down => {
+                position.y -= ROOM_HEIGHT;
             }
         }
 
